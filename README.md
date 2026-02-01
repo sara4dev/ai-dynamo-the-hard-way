@@ -52,12 +52,11 @@ This setup is ideal for learning Dynamo because its key innovations (disaggregat
 
 ### Part 1: Foundations (Single Node - dgx-spark-01)
 
-| Module | Notebook                                                                           | Description                                  |
-| ------ | ---------------------------------------------------------------------------------- | -------------------------------------------- |
-| **00** | [00-architecture-overview.ipynb](notebooks/00-architecture-overview.ipynb)         | Understand Dynamo's components and data flow |
-| **01** | [01-setup-and-first-inference.ipynb](notebooks/01-setup-and-first-inference.ipynb) | Install Dynamo, first inference request      |
-| **02** | [02-frontend-deep-dive.ipynb](notebooks/02-frontend-deep-dive.ipynb)               | Rust HTTP server, OpenAI compatibility       |
-| **03** | [03-workers-and-backends.ipynb](notebooks/03-workers-and-backends.ipynb)           | SGLang, vLLM, TensorRT-LLM comparison        |
+| Module | Notebook                                                                           | Description                             |
+| ------ | ---------------------------------------------------------------------------------- | --------------------------------------- |
+| **01** | [01-setup-and-first-inference.ipynb](notebooks/01-setup-and-first-inference.ipynb) | Install Dynamo, first inference request |
+| **02** | [02-frontend-deep-dive.ipynb](notebooks/02-frontend-deep-dive.ipynb)               | Rust HTTP server, OpenAI compatibility  |
+| **03** | [03-workers-and-backends.ipynb](notebooks/03-workers-and-backends.ipynb)           | SGLang, vLLM, TensorRT-LLM comparison   |
 
 ### Part 2: Infrastructure (Single Node)
 
@@ -91,8 +90,8 @@ This setup is ideal for learning Dynamo because its key innovations (disaggregat
 git clone https://github.com/sara4dev/ai-dynamo-the-hard-way.git
 cd ai-dynamo-the-hard-way
 
-# Start with Module 00
-jupyter lab notebooks/00-architecture-overview.ipynb
+# Start with Module 01
+jupyter lab notebooks/01-setup-and-first-inference.ipynb
 ```
 
 ## 📋 Prerequisites
@@ -115,7 +114,6 @@ jupyter lab notebooks/00-architecture-overview.ipynb
 ai-dynamo-the-hard-way/
 ├── README.md
 ├── notebooks/              # Jupyter notebooks for each module
-│   ├── 00-architecture-overview.ipynb
 │   ├── 01-setup-and-first-inference.ipynb
 │   └── ...
 ├── scripts/                # Helper scripts
