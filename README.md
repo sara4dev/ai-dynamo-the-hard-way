@@ -3,6 +3,8 @@
 A progressive, hands-on approach to learning [NVIDIA AI Dynamo](https://github.com/ai-dynamo/dynamo) - a Datacenter Scale Distributed Inference Serving Framework.
 
 > **Philosophy**: No Kubernetes operators. No magic. Just understanding each component from the ground up.
+>
+> **Key Learning Approach**: First measure baseline performance (without Dynamo), then demonstrate improvements with Dynamo. You can't appreciate optimizations without understanding what you're optimizing from.
 
 ## 🖥️ Hardware Setup
 
@@ -67,19 +69,20 @@ This setup is ideal for learning Dynamo because its key innovations (disaggregat
 
 ### Part 3: Distributed Inference (Both DGX Spark Nodes)
 
-| Module | Notebook                                                                   | Description                                |
-| ------ | -------------------------------------------------------------------------- | ------------------------------------------ |
-| **07** | [07-infiniband-setup.ipynb](notebooks/07-infiniband-setup.ipynb)           | Verify InfiniBand, RDMA configuration      |
-| **08** | [08-multi-node-workers.ipynb](notebooks/08-multi-node-workers.ipynb)       | Workers across nodes, pipeline parallelism |
-| **09** | [09-disaggregated-serving.ipynb](notebooks/09-disaggregated-serving.ipynb) | Separate prefill and decode phases         |
-| **10** | [10-nixl-kv-transfer.ipynb](notebooks/10-nixl-kv-transfer.ipynb)           | RDMA-based KV cache transfer               |
+| Module | Notebook                                                                           | Description                                     |
+| ------ | ---------------------------------------------------------------------------------- | ----------------------------------------------- |
+| **07** | [07-infiniband-setup.ipynb](notebooks/07-infiniband-setup.ipynb)                   | Verify InfiniBand, RDMA configuration           |
+| **08** | [08-multi-node-workers.ipynb](notebooks/08-multi-node-workers.ipynb)               | Workers across nodes, pipeline parallelism      |
+| **09** | [09-baseline-two-node-serving.ipynb](notebooks/09-baseline-two-node-serving.ipynb) | **Baseline**: Two vLLM nodes without Dynamo     |
+| **10** | [10-disaggregated-serving.ipynb](notebooks/10-disaggregated-serving.ipynb)         | **With Dynamo**: Same nodes, disaggregated mode |
+| **11** | [11-nixl-kv-transfer.ipynb](notebooks/11-nixl-kv-transfer.ipynb)                   | RDMA-based KV cache transfer                    |
 
 ### Part 4: Production Patterns
 
 | Module | Notebook                                                                     | Description                             |
 | ------ | ---------------------------------------------------------------------------- | --------------------------------------- |
-| **11** | [11-benchmarking.ipynb](notebooks/11-benchmarking.ipynb)                     | AIPerf, latency analysis, throughput    |
-| **12** | [12-large-model-deployment.ipynb](notebooks/12-large-model-deployment.ipynb) | DeepSeek-R1, Llama-3-70B across cluster |
+| **12** | [12-benchmarking.ipynb](notebooks/12-benchmarking.ipynb)                     | AIPerf, latency analysis, throughput    |
+| **13** | [13-large-model-deployment.ipynb](notebooks/13-large-model-deployment.ipynb) | DeepSeek-R1, Llama-3-70B across cluster |
 
 ## 🚀 Quick Start
 
@@ -128,6 +131,19 @@ ai-dynamo-the-hard-way/
     └── hosts.yaml
 ```
 
+## 📊 The Baseline Comparison (Modules 09-10)
+
+A key learning experience in this curriculum is the **before/after comparison**:
+
+| Metric              | Module 09 (Baseline)       | Module 10 (Dynamo)     | Why It Matters                |
+| ------------------- | -------------------------- | ---------------------- | ----------------------------- |
+| **Throughput**      | Two independent vLLM nodes | Same nodes with Dynamo | Shows specialization benefits |
+| **TTFT**            | Higher variance            | Lower, consistent      | Dedicated prefill nodes help  |
+| **p95 Latency**     | Higher tail latency        | Lower tail latency     | No prefill blocking decode    |
+| **GPU Utilization** | Uneven, bursty             | Balanced, efficient    | Better resource allocation    |
+
+This comparison answers the fundamental question: **"Why do we need Dynamo at all?"**
+
 ## 🎯 Learning Outcomes
 
 By the end of this journey, you will:
@@ -138,8 +154,9 @@ By the end of this journey, you will:
 4. **Implement** messaging patterns with NATS JetStream
 5. **Enable** KV-aware routing for efficient prefix caching
 6. **Scale** inference across multiple nodes using InfiniBand
-7. **Optimize** with disaggregated prefill/decode serving
-8. **Benchmark** and tune for production workloads
+7. **Measure** baseline performance and demonstrate quantifiable improvements
+8. **Optimize** with disaggregated prefill/decode serving
+9. **Benchmark** and tune for production workloads
 
 ---
 

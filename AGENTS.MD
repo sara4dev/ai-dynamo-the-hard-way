@@ -21,6 +21,62 @@ When helping this learner:
 2. **Start with working minimal code** - Then add complexity incrementally
 3. **Explain distributed systems aspects deeply** - This is their strength
 4. **Demystify ML jargon** - Use plain systems engineering language
+5. **Establish baselines before showing optimizations** - Can't appreciate "after" without "before"
+
+---
+
+## Baseline Comparison Pedagogy
+
+> You can't appreciate an optimization without seeing what you're optimizing from.
+
+### Why Baselines Matter
+
+This is how systems engineers evaluate any infrastructure change:
+- "We added Redis caching → 3x faster"
+- "We switched to connection pooling → 50% latency reduction"
+- "We implemented disaggregated serving → 2x throughput"
+
+### The Critical Comparison (Modules 09-10)
+
+**Module 09: Baseline (Without Dynamo)**
+- Two independent vLLM nodes
+- Simple load balancer (round-robin)
+- Each request handled entirely by one node (prefill + decode)
+- Measure: throughput, TTFT, p50/p95 latency, GPU utilization
+
+**Module 10: With Dynamo (Same Hardware)**
+- Same two nodes with Dynamo orchestration
+- Disaggregated serving (prefill specialist + decode specialist)
+- KV cache transfer via NIXL
+- Same measurements for direct comparison
+
+### Key Metrics to Capture
+
+| Metric                         | What It Shows         | Systems Analogy                     |
+| ------------------------------ | --------------------- | ----------------------------------- |
+| **Throughput** (req/s)         | Overall capacity      | Requests per second on a web server |
+| **TTFT** (Time to First Token) | Prefill efficiency    | "Time to first byte" in HTTP        |
+| **Latency p50/p95**            | User experience       | Response time distribution          |
+| **GPU Utilization**            | Resource efficiency   | CPU usage graphs                    |
+| **KV Cache Hit Rate**          | Routing effectiveness | Cache hit ratio                     |
+
+### Making the Baseline Fair
+
+To ensure honest comparison, the baseline should be the *best you can do* without Dynamo:
+- Use vLLM's continuous batching (not naive sequential)
+- Use a decent load balancer (not just random)
+- Tune batch sizes appropriately
+
+This way, when Dynamo wins, it's because of **architectural advantages** (disaggregation, KV-aware routing), not because the baseline was poorly configured.
+
+### What the Comparison Reveals
+
+| Without Dynamo                       | With Dynamo                            | Why                              |
+| ------------------------------------ | -------------------------------------- | -------------------------------- |
+| Each node does full prefill + decode | Prefill specialist + Decode specialist | Hardware optimization per phase  |
+| KV cache computed per-request        | KV cache shared/transferred            | Eliminates redundant computation |
+| Random/round-robin routing           | KV-aware routing (session affinity)    | Cache hits reduce latency        |
+| GPU memory duplicated                | GPU memory distributed                 | More efficient resource usage    |
 
 ---
 
@@ -30,17 +86,17 @@ When helping this learner:
 
 Before any code, establish these mappings:
 
-| Dynamo Concept | Systems Engineering Equivalent |
-|----------------|-------------------------------|
-| Frontend | HTTP reverse proxy (like Nginx) |
-| Router | Load balancer with session affinity |
-| Worker | Backend service instance |
-| etcd | Service registry (like Consul/ZooKeeper) |
-| NATS | Message queue (like Kafka/RabbitMQ) |
-| KV Cache | In-memory cache (like Redis) per request |
-| NIXL | RDMA-based cache replication |
-| Prefill Phase | Request parsing + cache warmup |
-| Decode Phase | Response generation (streaming) |
+| Dynamo Concept | Systems Engineering Equivalent           |
+| -------------- | ---------------------------------------- |
+| Frontend       | HTTP reverse proxy (like Nginx)          |
+| Router         | Load balancer with session affinity      |
+| Worker         | Backend service instance                 |
+| etcd           | Service registry (like Consul/ZooKeeper) |
+| NATS           | Message queue (like Kafka/RabbitMQ)      |
+| KV Cache       | In-memory cache (like Redis) per request |
+| NIXL           | RDMA-based cache replication             |
+| Prefill Phase  | Request parsing + cache warmup           |
+| Decode Phase   | Response generation (streaming)          |
 
 ### Level 1: Single Process Understanding
 
@@ -169,9 +225,26 @@ Explain as:
 > "Like separating web servers (compute-heavy parsing) from API servers (I/O-heavy responses). Prefill is CPU/memory intensive, decode is latency-sensitive."
 
 Build understanding:
-1. Measure prefill time vs decode time separately
-2. Show how they can run on different hardware
-3. Demonstrate KV cache transfer between phases
+1. **First, show baseline** - Two nodes each doing full prefill+decode
+2. Measure prefill time vs decode time separately
+3. Show how they can run on different hardware
+4. Demonstrate KV cache transfer between phases
+5. **Compare metrics** - Same hardware, different architecture
+
+Why baseline matters here:
+- Without seeing prefill blocking decode, learner won't appreciate specialization
+- Without measuring KV cache misses, learner won't understand routing value
+- Without observing uneven GPU utilization, learner won't see resource waste
+
+When disaggregation helps most:
+- **Long prompts**: Big win (prefill dominates, specialization pays off)
+- **Mixed workloads**: Dynamic routing shines
+- **High concurrency**: Batching optimization per phase
+
+When disaggregation might not help:
+- **Very short prompts**: Transfer overhead might exceed benefit
+- **Single user, low concurrency**: Overhead of coordination
+- **Latency-critical single requests**: Added network hop
 
 ### 3. NIXL and RDMA
 
@@ -230,9 +303,18 @@ Day 5: Full single-node deployment
 ```
 Day 1: InfiniBand verification
 Day 2: Cross-node worker registration
-Day 3: NIXL setup and testing
-Day 4: Disaggregated prefill/decode
-Day 5: End-to-end distributed inference
+Day 3: BASELINE - Two vLLM nodes without Dynamo, measure metrics
+Day 4: WITH DYNAMO - Same nodes, disaggregated serving, compare metrics
+Day 5: NIXL setup, KV cache transfer optimization
+```
+
+### Week 4: Advanced Optimization
+```
+Day 1: Analyze baseline vs Dynamo results
+Day 2: Tune for specific workloads (long prompts vs short)
+Day 3: KV-aware routing optimization
+Day 4: End-to-end production deployment
+Day 5: Benchmarking and documentation
 ```
 
 ---
@@ -249,13 +331,13 @@ When things go wrong, check in order:
 
 ### Common Issues
 
-| Symptom | Likely Cause | Debug Command |
-|---------|--------------|---------------|
-| Worker not found | etcd registration failed | `etcdctl get --prefix /dynamo` |
-| Slow inference | KV cache miss | Check routing logs for prefix matching |
-| Connection refused | Service not started | `ss -tlnp \| grep <port>` |
-| CUDA OOM | Model too large | `nvidia-smi` during load |
-| RDMA failed | InfiniBand misconfigured | `ibstat`, `ibv_devinfo` |
+| Symptom            | Likely Cause             | Debug Command                          |
+| ------------------ | ------------------------ | -------------------------------------- |
+| Worker not found   | etcd registration failed | `etcdctl get --prefix /dynamo`         |
+| Slow inference     | KV cache miss            | Check routing logs for prefix matching |
+| Connection refused | Service not started      | `ss -tlnp \| grep <port>`              |
+| CUDA OOM           | Model too large          | `nvidia-smi` during load               |
+| RDMA failed        | InfiniBand misconfigured | `ibstat`, `ibv_devinfo`                |
 
 ---
 
@@ -313,6 +395,34 @@ When generating code or explanations:
 4. **Explain resource usage** - CPU, memory, GPU, network
 5. **Reference official Dynamo source when explaining internals**
 6. **Never skip error handling** - real systems fail
+7. **Establish baselines before optimizations** - always measure "without" before "with"
+
+### Baseline Comparison Guidelines
+
+When demonstrating Dynamo benefits:
+1. **Fair baseline**: Use best-practice vLLM setup (continuous batching, proper tuning)
+2. **Same hardware**: Baseline and Dynamo tests must use identical hardware
+3. **Same workload**: Use identical request patterns for both tests
+4. **Capture all metrics**: throughput, TTFT, p50/p95 latency, GPU utilization
+5. **Explain the "why"**: Don't just show numbers, explain what causes the difference
+
+Example comparison structure:
+```
+## Baseline Results (Two vLLM Nodes, Round-Robin)
+- Throughput: X req/s
+- TTFT: Y ms (p50), Z ms (p95)
+- Observation: Prefill blocking decode, uneven GPU usage
+
+## Dynamo Results (Same Nodes, Disaggregated)
+- Throughput: 1.8X req/s (+80%)
+- TTFT: 0.7Y ms (p50), 0.6Z ms (p95)
+- Observation: Specialized workers, balanced GPU usage
+
+## Why the Improvement?
+1. Prefill nodes focus on compute-heavy prompt processing
+2. Decode nodes optimize for memory-bandwidth streaming
+3. KV cache transfer eliminates redundant computation
+```
 
 When the learner is stuck:
 1. Check if it's an environment issue first
