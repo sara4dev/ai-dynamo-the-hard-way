@@ -1,6 +1,6 @@
 # AI Agent Instructions for AI Dynamo: The Hard Way
 
-> **Reference**: See [README.md](README.md) for architecture diagrams, learning modules, hardware setup, and baseline comparison details.
+> **Reference**: See [README.md](README.md) for architecture diagrams, learning modules, and hardware setup details.
 
 ## Learner Profile
 
@@ -30,8 +30,6 @@ When helping this learner:
 ## Baseline Comparison Pedagogy
 
 > You can't appreciate an optimization without seeing what you're optimizing from.
-
-See [README.md](README.md#-the-baseline-comparison-modules-09-10) for the detailed baseline comparison metrics and module structure.
 
 ### Why Baselines Matter
 
@@ -284,7 +282,7 @@ When generating code or explanations:
 
 ### Baseline Comparison Guidelines
 
-When demonstrating Dynamo benefits, follow the comparison structure in [README.md](README.md#-the-baseline-comparison-modules-09-10). Key principles:
+When demonstrating Dynamo benefits:
 1. **Fair baseline**: Use best-practice vLLM setup (continuous batching, proper tuning)
 2. **Same hardware**: Baseline and Dynamo tests must use identical hardware
 3. **Same workload**: Use identical request patterns for both tests
